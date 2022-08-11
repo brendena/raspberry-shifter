@@ -13,7 +13,6 @@ void handleKeyboardLed(uint8_t dev_addr, uint8_t instance,hid_keyboard_report_t 
   unsigned char tmpStatus = status;
 
   unsigned char key = 0;
-  unsigned char pressed = 0;
   unsigned char mod = 0; 
   for(uint8_t i=0; i<6; i++)
   {
@@ -22,15 +21,15 @@ void handleKeyboardLed(uint8_t dev_addr, uint8_t instance,hid_keyboard_report_t 
     switch(key){
       case HID_KEY_CAPS_LOCK:
         printf("got here\n");
-        mod = KEYBOARD_LED_NUMLOCK;
+        mod = KEYBOARD_LED_CAPSLOCK;
         lockingKeys.capsLock = !lockingKeys.capsLock;
         break;
       case HID_KEY_NUM_LOCK:
-        mod = KEYBOARD_LED_CAPSLOCK;
+        mod = KEYBOARD_LED_NUMLOCK;
         lockingKeys.numLock = !lockingKeys.numLock;
         break;
-      case KEYBOARD_LED_SCROLLLOCK:
-        mod = HID_KEY_SCROLL_LOCK;
+      case HID_KEY_SCROLL_LOCK:
+        mod = KEYBOARD_LED_SCROLLLOCK;
         lockingKeys.scrollLock = !lockingKeys.scrollLock;
         break;
       default:
