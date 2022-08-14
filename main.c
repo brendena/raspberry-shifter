@@ -29,6 +29,7 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
+#include "hid_keyboard.h"
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
@@ -46,6 +47,8 @@ int main(void)
   printf("TinyUSB Host CDC MSC HID Example\r\n");
 
   tusb_init();
+
+
 
   while (1)
   {
@@ -80,4 +83,15 @@ void led_blinking_task(void)
 
   board_led_write(led_state);
   led_state = 1 - led_state; // toggle
+}
+
+
+void hid_app_task(void)
+{
+  const USB_KeyboardState* keyboardState = getUSBKeyboardState();
+  if(checkAndResetChagnedUsb())
+  {
+    printf("changed!\r\n");
+  }
+
 }
