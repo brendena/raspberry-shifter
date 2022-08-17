@@ -29,7 +29,9 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
-#include "hid_keyboard.h"
+#include "usb/hid_keyboard.h"
+#include "ps2/ps2kbd-lib/ps2kbd.h"
+#include "ps2ToUsb.h"
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
@@ -48,7 +50,7 @@ int main(void)
 
   tusb_init();
 
-
+  kbd_init(1, 14);
 
   while (1)
   {
@@ -88,10 +90,29 @@ void led_blinking_task(void)
 
 void hid_app_task(void)
 {
-  const USB_KeyboardState* keyboardState = getUSBKeyboardState();
-  if(checkAndResetChagnedUsb())
+  static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
+
+  const USB_KeyboardState* keyboardState = getPs2KeyboardState();
+  for(uint8_t i=0; i<6; i++)
   {
-    printf("changed!\r\n");
+    if ( keyboardState->input.keycode[i] )
+    {
+      if ( find_key_in_report(&prev_report, keyboardState->input.keycode[i]) )
+      {
+        // exist in previous report means the current key is holding
+      }else
+      {
+        // not existed in previous report means the current key is pressed
+        bool const is_shift = keyboardState->input.modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT);
+        uint8_t ch = keycode2ascii[keyboardState->input.keycode[i]][is_shift ? 1 : 0];
+        putchar(ch);
+        if ( ch == '\r' ) putchar('\n'); // added new line for enter key
+
+        fflush(stdout); // flush right away, else nanolib will wait for newline
+      }
+    }
+    // TODO example skips key released
   }
 
+  prev_report = keyboardState->input;
 }

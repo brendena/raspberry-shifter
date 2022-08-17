@@ -7,6 +7,7 @@ https://github.com/hathach/tinyusb/blob/ae531a79f654d566790a4daae350730cdc0a01e9
 #include "bsp/board.h"
 #include "tusb.h"
 #include "hid_keyboard.h"
+#include "tusb_config.h"
 
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION

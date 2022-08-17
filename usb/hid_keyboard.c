@@ -3,10 +3,10 @@
 // Keyboard
 //--------------------------------------------------------------------+
 
-LockingKeys lockingKeys ={0};
+LockingKeys lockingKeys;
 USB_KeyboardState usbKeyboardState;
 
-static uint8_t const keycode2ascii[128][2] =  { HID_KEYCODE_TO_ASCII };
+uint8_t const keycode2ascii[128][2] =  { HID_KEYCODE_TO_ASCII };
 
 
 const USB_KeyboardState * getUSBKeyboardState() {return &usbKeyboardState;}
@@ -51,9 +51,9 @@ void handleKeyboardLed(uint8_t dev_addr, uint8_t instance,hid_keyboard_report_t 
 
 
 
-/*
+
 // look up new key in previous keys
-inline bool find_key_in_report(hid_keyboard_report_t const *report, uint8_t keycode)
+bool find_key_in_report(hid_keyboard_report_t const *report, uint8_t keycode)
 {
   for(uint8_t i=0; i<6; i++)
   {
@@ -62,11 +62,10 @@ inline bool find_key_in_report(hid_keyboard_report_t const *report, uint8_t keyc
 
   return false;
 }
-*/
+
 
 void process_kbd_report(hid_keyboard_report_t const *report)
 {
-  printf("test\n");
   memcpy(&usbKeyboardState.input, report, sizeof(hid_keyboard_report_t));
   usbKeyboardState.changed++; 
 }

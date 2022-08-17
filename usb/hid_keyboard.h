@@ -24,8 +24,10 @@ typedef struct USB_KeyboardState
 //used internally
 void process_kbd_report(hid_keyboard_report_t const *report);
 void handleKeyboardLed(uint8_t dev_addr, uint8_t instance,hid_keyboard_report_t const* report);
-
+bool find_key_in_report(hid_keyboard_report_t const *report, uint8_t keycode);
 
 //externally
 unsigned char checkAndResetChagnedUsb();
 const USB_KeyboardState*  getUSBKeyboardState();
+
+extern uint8_t const keycode2ascii[128][2];
