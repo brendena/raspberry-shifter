@@ -10,8 +10,8 @@ ps2 into usb
 LockingKeys ps2LockingKeys;
 USB_KeyboardState ps2KeyboardState;
 
-const USB_KeyboardState*  getPs2KeyboardState(){
-    return &ps2KeyboardState;
+const USB_KeyboardState  getPs2KeyboardState(){
+    return ps2KeyboardState;
 }
 
 void addKey(hid_keyboard_report_t *input, unsigned char usbKey)
@@ -23,6 +23,7 @@ void addKey(hid_keyboard_report_t *input, unsigned char usbKey)
             break;
         }
     }
+    //printf(" [key] added\n");
 }
 
 void removeKey(hid_keyboard_report_t *input, unsigned char usbKey)
@@ -40,7 +41,7 @@ void removeKey(hid_keyboard_report_t *input, unsigned char usbKey)
         input->keycode[i] = input->keycode[i + 1];
     }
     input->keycode[5] = 0;
-    printf("key released\n");
+    //printf(" [key] released\n");
 }
 
 void handle_ps2_keyboard_event(unsigned char ps2Key){

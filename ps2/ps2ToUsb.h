@@ -9,4 +9,4 @@ ps2 into usb
 */
 
 void handle_ps2_keyboard_event(unsigned char ps2Key);
-const USB_KeyboardState*  getPs2KeyboardState();
+const USB_KeyboardState  getPs2KeyboardState();

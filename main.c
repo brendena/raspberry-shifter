@@ -55,7 +55,7 @@ int main(void)
   while (1)
   {
     // tinyusb host task
-    tuh_task();
+    // tuh_task();
     led_blinking_task();
     hid_app_task();
   }
@@ -92,19 +92,19 @@ void hid_app_task(void)
 {
   static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
 
-  const USB_KeyboardState* keyboardState = getPs2KeyboardState();
+  const USB_KeyboardState keyboardState = getPs2KeyboardState();
   for(uint8_t i=0; i<6; i++)
   {
-    if ( keyboardState->input.keycode[i] )
+    if ( keyboardState.input.keycode[i] )
     {
-      if ( find_key_in_report(&prev_report, keyboardState->input.keycode[i]) )
+      if ( find_key_in_report(&prev_report, keyboardState.input.keycode[i]) )
       {
         // exist in previous report means the current key is holding
       }else
       {
         // not existed in previous report means the current key is pressed
-        bool const is_shift = keyboardState->input.modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT);
-        uint8_t ch = keycode2ascii[keyboardState->input.keycode[i]][is_shift ? 1 : 0];
+        bool const is_shift = keyboardState.input.modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT);
+        uint8_t ch = keycode2ascii[keyboardState.input.keycode[i]][is_shift ? 1 : 0];
         putchar(ch);
         if ( ch == '\r' ) putchar('\n'); // added new line for enter key
 
@@ -114,5 +114,5 @@ void hid_app_task(void)
     // TODO example skips key released
   }
 
-  prev_report = keyboardState->input;
+  prev_report = keyboardState.input;
 }
