@@ -17,8 +17,12 @@ static uint kbd_sm;         // pio state machine index
 static uint base_gpio;      // data signal gpio #
 static unsigned char kbd_key_buff; //holds the currently pressed key
 
+
+
 void __attribute__((weak)) handle_ps2_keyboard_event(unsigned char ps2Key){}
 
+
+int gotTheMessage = 0;
 
 void on_pio0_irq0(){
     pio_interrupt_get(kbd_pio, 0);
@@ -32,9 +36,14 @@ void on_pio0_irq0(){
     if (pio_sm_is_rx_fifo_empty(kbd_pio, kbd_sm))
         return; // no new codes in the fifo
     uint8_t code = *((io_rw_8*)&kbd_pio->rxf[kbd_sm] + 3);
-    handle_ps2_keyboard_event(code);
+    //handle_ps2_keyboard_event(code);
+    printf("code %d\n", code);
+    if(code == 0xfa){
+        printf("sending second byte's\n");
+        gotTheMessage = 1;
+        pio_sm_put_blocking(kbd_pio, kbd_sm,0b100000011);
+    }
 
-    
 }
 
 void kbd_init(uint pio, uint gpio) {
@@ -53,16 +62,16 @@ void kbd_init(uint pio, uint gpio) {
     // program the start and wrap SM registers
     pio_sm_config c = ps2kbd_program_get_default_config(offset);
 
-    sm_config_set_set_pins(&c, base_gpio + 1,1);
+    sm_config_set_set_pins(&c, base_gpio,2);
     sm_config_set_jmp_pin(&c, base_gpio + 1); // set the EXECCTRL_JMP_PIN
 
 //configure out section PS2
     // Set pin directions base
-    pio_sm_set_consecutive_pindirs(kbd_pio, kbd_sm, base_gpio + 1, 1, false);
+    pio_sm_set_consecutive_pindirs(kbd_pio, kbd_sm, base_gpio, 2, false);
     // Set the out pins
-    sm_config_set_out_pins(&c, base_gpio + 1, 2);
+    sm_config_set_out_pins(&c, base_gpio, 2);
 // Shift 8 bits to the right, autopush enabled
-    sm_config_set_out_shift(&c, true, false, 8);
+    sm_config_set_out_shift(&c, true, true, 9); //eight data bytes plus parity
 
 //configure in section PS2
     // Set the base input pin. pin index 0 is DAT, index 1 is CLK
@@ -95,14 +104,25 @@ void kbd_init(uint pio, uint gpio) {
     pio_sm_init(kbd_pio, kbd_sm, offset, &c);
     pio_sm_set_enabled(kbd_pio, kbd_sm, true);
 
-    while(true)
+    sleep_ms(3000);
+    //while(true)
     {
-        sleep_ms(100);
-        pio_sm_put_blocking(kbd_pio, kbd_sm,3);
-        printf("got here\n");
+        
+        //pio_sm_put_blocking(kbd_pio, kbd_sm,0xF2);
+        //pio_sm_put_blocking(kbd_pio, kbd_sm,0xF2);
+        printf("===========Start\n");
+        pio_sm_put_blocking(kbd_pio, kbd_sm,0x1ED);
+        while(gotTheMessage == 0)
+        {
+            sleep_ms(5);
+            //pio_sm_put_blocking(kbd_pio, kbd_sm,0b100000011);
+        }
+        //pio_sm_put_blocking(kbd_pio, kbd_sm,0b00000111); //turn all led's on
+        printf("===========end\n");
+        //printf("got here\n");
     }
-
     
+    while(true){}
 
 
 }
