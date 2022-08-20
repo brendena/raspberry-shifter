@@ -17,8 +17,10 @@ ps2 into usb
 #define PS2_GUI_L        0x1f //0xe0
 #define PS2_GUI_R        0x27 //oxe0
 
+
 #define PS2_EXTENSION_FLAG 0xe0
 #define PS2_RELASE_FLAG    0xf0
+
 
 
 void handle_ps2_keyboard_event(unsigned char ps2Key);

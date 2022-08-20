@@ -15,14 +15,74 @@
 static PIO kbd_pio;         // pio0 or pio1
 static uint kbd_sm;         // pio state machine index
 static uint base_gpio;      // data signal gpio #
-static unsigned char kbd_key_buff; //holds the currently pressed key
 
 
+static uint sending_to_keyboard = 0;
+static Ps2LockingKeysUnion lockedKeys;
 
 void __attribute__((weak)) handle_ps2_keyboard_event(unsigned char ps2Key){}
 
+unsigned int kbd_add_parity(unsigned char byte)
+{
+    unsigned int returnData = byte;
+    unsigned numOnes = 0;
+    for(int i =0; i < 8; i++)
+    {
+        numOnes += byte & 1;
+        byte = byte >> 1;
+    }
+    printf("returnData %d\n",returnData);
+    returnData +=  (!(numOnes % 2)) << 9;
+    printf("returnData %d\n",returnData);
+    return returnData;
+}
 
-int gotTheMessage = 0;
+void handleLeds(unsigned char ps2Key){
+    static uint8_t release; // Flag indicates the release of a key
+    if(ps2Key == PS2_RELASE_FLAG){
+        release = 1; 
+    }
+
+    if(sending_to_keyboard)
+    {
+        if(ps2Key == PS2_ACK_RESPONSE){
+            if(sending_to_keyboard == PS2_COMMANDS_SET_LEDS){
+                printf("sending second byte's\n");
+                kbd_send_command(kbd_add_parity(lockedKeys.value));
+            }
+            else{
+                sending_to_keyboard = 0;//??? probably not the right call
+            }
+
+
+            
+        }
+    }
+    else if(release)
+    {
+        if(ps2Key == PS2_CAPS_LOCK)
+        {
+            printf("sending caps lock\n");
+            lockedKeys.keys.numLock = !lockedKeys.keys.numLock;
+            kbd_send_command(PS2_COMMANDS_SET_LEDS);
+        }
+        else if(ps2Key == PS2_SCROLL_LOCK)
+        {
+            lockedKeys.keys.scrollLock = !lockedKeys.keys.scrollLock;
+        }
+        else if(ps2Key == PS2_NUM_LOCK)
+        {
+            lockedKeys.keys.numLock = !lockedKeys.keys.numLock;
+        }
+    }
+
+    if(ps2Key != PS2_RELASE_FLAG)
+    {
+        release = 0;
+    }
+                
+}
+
 
 void on_pio0_irq0(){
     pio_interrupt_get(kbd_pio, 0);
@@ -36,21 +96,14 @@ void on_pio0_irq0(){
     if (pio_sm_is_rx_fifo_empty(kbd_pio, kbd_sm))
         return; // no new codes in the fifo
     uint8_t code = *((io_rw_8*)&kbd_pio->rxf[kbd_sm] + 3);
-    //handle_ps2_keyboard_event(code);
-    printf("code %d\n", code);
-    if(code == 0xfa){
-        printf("sending second byte's\n");
-        gotTheMessage = 1;
-        pio_sm_put_blocking(kbd_pio, kbd_sm,0b100000011);
-    }
-
+    handle_ps2_keyboard_event(code);
+    handleLeds(code);
 }
 
 void kbd_init(uint pio, uint gpio) {
     kbd_pio = pio ? pio1 : pio0;
     base_gpio = gpio; // base_gpio is data signal, base_gpio+1 is clock signal
-
-
+    
     // with pull up
     gpio_pull_up(base_gpio);
     gpio_pull_up(base_gpio + 1);
@@ -103,27 +156,12 @@ void kbd_init(uint pio, uint gpio) {
     // Ready to go
     pio_sm_init(kbd_pio, kbd_sm, offset, &c);
     pio_sm_set_enabled(kbd_pio, kbd_sm, true);
-
-    sleep_ms(3000);
-    //while(true)
-    {
-        
-        //pio_sm_put_blocking(kbd_pio, kbd_sm,0xF2);
-        //pio_sm_put_blocking(kbd_pio, kbd_sm,0xF2);
-        printf("===========Start\n");
-        pio_sm_put_blocking(kbd_pio, kbd_sm,0x1ED);
-        while(gotTheMessage == 0)
-        {
-            sleep_ms(5);
-            //pio_sm_put_blocking(kbd_pio, kbd_sm,0b100000011);
-        }
-        //pio_sm_put_blocking(kbd_pio, kbd_sm,0b00000111); //turn all led's on
-        printf("===========end\n");
-        //printf("got here\n");
-    }
-    
-    while(true){}
+}
 
 
+void kbd_send_command(unsigned short data )
+{
+    sending_to_keyboard = data;
+    pio_sm_put_blocking(kbd_pio, kbd_sm,data);
 }
 
