@@ -13,11 +13,11 @@
 .program ps2kbd
 
 check:
-;    PULL noblock
-;    JMP !OSRE bitLoopOut
-;    JMP PIN check
+    PULL 
+    JMP !OSRE bitLoopOut
+    JMP check
 
-    wait 0 pin 1     ; skip start bit
+    ;wait 0 pin 1     ; skip start bit
     wait 1 pin 1
 
     set x, 7         ; 8 bit counter
@@ -35,10 +35,10 @@ bitloopIn:
     irq  set 0
     JMP check
 
-;bitLoopOut:
-;    SET PINDIRS 2 ; turn clock output
-;    SET PINS 2 [15]
-;    SET PINDIRS 0 ; turn back to input
+bitLoopOut:
+    SET PINDIRS 1 [14]; turn clock output and should pull the line low
+    SET PINDIRS 0  [1]; turn back to input
+
     
 
 ;    SET X 0b11
