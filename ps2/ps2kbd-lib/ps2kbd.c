@@ -17,9 +17,7 @@ static uint kbd_sm;         // pio state machine index
 static uint base_gpio;      // data signal gpio #
 static unsigned char kbd_key_buff; //holds the currently pressed key
 
-void __attribute__((weak)) handle_ps2_keyboard_event(unsigned char ps2Key){
-
-}
+void __attribute__((weak)) handle_ps2_keyboard_event(unsigned char ps2Key){}
 
 
 void on_pio0_irq0(){
@@ -32,8 +30,7 @@ void on_pio0_irq0(){
     static uint8_t ascii;   // Translated to ASCII
 
     if (pio_sm_is_rx_fifo_empty(kbd_pio, kbd_sm))
-        return 0; // no new codes in the fifo
-
+        return; // no new codes in the fifo
     uint8_t code = *((io_rw_8*)&kbd_pio->rxf[kbd_sm] + 3);
     handle_ps2_keyboard_event(code);
 
@@ -44,25 +41,45 @@ void kbd_init(uint pio, uint gpio) {
     kbd_pio = pio ? pio1 : pio0;
     base_gpio = gpio; // base_gpio is data signal, base_gpio+1 is clock signal
     // init KBD pins to input
-    gpio_init(base_gpio);
-    gpio_init(base_gpio + 1);
+    //gpio_init(base_gpio);
+    //gpio_init(base_gpio + 1);
+
     // with pull up
     gpio_pull_up(base_gpio);
     gpio_pull_up(base_gpio + 1);
+    
     // get a state machine
     kbd_sm = pio_claim_unused_sm(kbd_pio, true);
     // reserve program space in SM memory
     uint offset = pio_add_program(kbd_pio, &ps2kbd_program);
-    // Set pin directions base
-    pio_sm_set_consecutive_pindirs(kbd_pio, kbd_sm, base_gpio, 2, false);
     // program the start and wrap SM registers
     pio_sm_config c = ps2kbd_program_get_default_config(offset);
+
+    sm_config_set_set_pins(&c, base_gpio,1);
+    sm_config_set_jmp_pin(&c, base_gpio + 1); // set the EXECCTRL_JMP_PIN
+
+//configure out section PS2
+    // Set pin directions base
+    pio_sm_set_consecutive_pindirs(kbd_pio, kbd_sm, base_gpio + 1, 1, false);
+    // Set the out pins
+    sm_config_set_out_pins(&c, base_gpio + 1, 2);
+// Shift 8 bits to the right, autopush enabled
+    sm_config_set_out_shift(&c, true, true, 8);
+
+//configure in section PS2
     // Set the base input pin. pin index 0 is DAT, index 1 is CLK
     sm_config_set_in_pins(&c, base_gpio);
+
+//start the pins as input at start
+    uint32_t both_pins = (1u << gpio) | (1u << (gpio + 1) );
+    pio_sm_set_pins_with_mask(kbd_pio, kbd_sm, both_pins, 0);
+    pio_sm_set_pindirs_with_mask(kbd_pio, kbd_sm, both_pins, 0);
+    pio_gpio_init(kbd_pio, gpio);
+    pio_gpio_init(kbd_pio, (gpio + 1));
+    
     // Shift 8 bits to the right, autopush enabled
     sm_config_set_in_shift(&c, true, true, 8);
-    // Deeper FIFO as we're not doing any TX
-    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+
     // We don't expect clock faster than 16.7KHz and want no less
     // than 8 SM cycles per keyboard clock.
     float div = (float)clock_get_hz(clk_sys) / (8 * 16700);
@@ -73,13 +90,17 @@ void kbd_init(uint pio, uint gpio) {
     irq_set_exclusive_handler(PIO1_IRQ_0, on_pio0_irq0);
     irq_set_enabled(PIO1_IRQ_0, true);
 
-    //set x andy y
-    pio_sm_exec(kbd_pio, kbd_sm, pio_encode_out(pio_x,0xF0));
 
     printf("got here!\n");
 
     // Ready to go
     pio_sm_init(kbd_pio, kbd_sm, offset, &c);
     pio_sm_set_enabled(kbd_pio, kbd_sm, true);
+
+
+    sleep_ms(100);
+    
+    //pio_sm_put_blocking(kbd_pio, kbd_sm,3);
+
 }
 

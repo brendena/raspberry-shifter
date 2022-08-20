@@ -5,42 +5,21 @@
 ;
 ; SPDX-License-Identifier: GPL-2.0-or-later
 ;
-
-
-; pin 0 - data
-; pin 1 - ctrl
-
 .program ps2kbd
-
-check:
-;    PULL noblock
-;    JMP !OSRE bitLoopOut
-;    JMP PIN check
 
     wait 0 pin 1     ; skip start bit
     wait 1 pin 1
 
     set x, 7         ; 8 bit counter
-bitloopIn:
+bitloop:
     wait 0 pin 1 [1] ; wait negative clock edge 
     in pins, 1       ; sample data
     wait 1 pin 1     ; wait for positive edge
-    jmp x-- bitloopIn
+    jmp x-- bitloop
 
     wait 0 pin 1     ; skip parity and stop bits
     wait 1 pin 1
     wait 0 pin 1
     wait 1 pin 1
 
-    irq  set 0
-    JMP check
-
-;bitLoopOut:
-;    SET PINDIRS 2 ; turn clock output
-;    SET PINS 2 [15]
-;    SET PINDIRS 0 ; turn back to input
-    
-
-;    SET X 0b11
-;    SET PINDIRS 3
-;    SET PINS 3
+    irq  set 0  
