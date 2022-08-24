@@ -20,7 +20,7 @@ static uint base_gpio;      // data signal gpio #
 static uint sending_to_keyboard = 0;
 static Ps2LockingKeysUnion lockedKeys;
 
-void __attribute__((weak)) handle_ps2_keyboard_event(unsigned char ps2Key){}
+void __attribute__((weak)) handle_ps2_keyboard_event(unsigned char ps2Key, unsigned char released, unsigned char shiftPressed, Ps2LockingKeysUnion *lockedKeys){}
 
 unsigned int kbd_add_parity(unsigned char byte)
 {
@@ -32,16 +32,13 @@ unsigned int kbd_add_parity(unsigned char byte)
         byte = byte >> 1;
     }
     printf("returnData %d\n",returnData);
-    returnData +=  (!(numOnes % 2)) << 9;
+    returnData +=  (!(numOnes & 1)) << 9;
     printf("returnData %d\n",returnData);
     return returnData;
 }
 
-void handleLeds(unsigned char ps2Key){
-    static uint8_t release; // Flag indicates the release of a key
-    if(ps2Key == PS2_RELASE_FLAG){
-        release = 1; 
-    }
+void handleLeds(unsigned char ps2Key, unsigned char release){
+
 
     if(sending_to_keyboard)
     {
@@ -51,11 +48,8 @@ void handleLeds(unsigned char ps2Key){
                 kbd_send_command(kbd_add_parity(lockedKeys.value));
             }
             else{
-                sending_to_keyboard = 0;//??? probably not the right call
+                sending_to_keyboard = 0;//??? probably not the right call.  for longer messages
             }
-
-
-            
         }
     }
     else if(release)
@@ -74,30 +68,37 @@ void handleLeds(unsigned char ps2Key){
         {
             lockedKeys.keys.numLock = !lockedKeys.keys.numLock;
         }
-    }
-
-    if(ps2Key != PS2_RELASE_FLAG)
-    {
-        release = 0;
-    }
-                
+    }        
 }
 
 
 void on_pio0_irq0(){
     pio_interrupt_get(kbd_pio, 0);
     pio_interrupt_clear(kbd_pio, 0);
-    irq_clear(PIO1_IRQ_0);
 
     static uint8_t release; // Flag indicates the release of a key
+    static uint8_t extNum;
     static uint8_t shift;   // Shift indication
-    static uint8_t ascii;   // Translated to ASCII
 
     if (pio_sm_is_rx_fifo_empty(kbd_pio, kbd_sm))
         return; // no new codes in the fifo
     uint8_t code = *((io_rw_8*)&kbd_pio->rxf[kbd_sm] + 3);
-    handle_ps2_keyboard_event(code);
-    handleLeds(code);
+    
+    if(code == PS2_RELASE_FLAG){
+        release = 1; 
+    }
+    else if(code == PS2_EXTENSION_FLAG)
+    {
+        extNum = 1;
+    }
+    else{
+        handleLeds(code, release);
+        handle_ps2_keyboard_event(code,release,shift, &lockedKeys);
+
+        release = 0; // not perfect should be a check to see if there's special characters
+    }
+
+
 }
 
 void kbd_init(uint pio, uint gpio) {

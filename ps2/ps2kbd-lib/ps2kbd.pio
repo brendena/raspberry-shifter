@@ -35,7 +35,7 @@ bitloopIn:
     JMP check
 
 bitLoopOut:
-    SET PINDIRS 2 [14]; turn clock output and should pull the line low
+    SET PINDIRS 2 [14]; turn clock output and should pull the line low for the needed 100ms 
     SET PINDIRS 1  [1]; turn back to input and since there's a pull up it will go high
     set PINS 0        ; make sure pins are low might have been set high from out section
     set x, 8         ; 9 bit counter

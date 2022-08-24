@@ -1,6 +1,8 @@
 #include "../usb/hid_keyboard.h"
 #include "usbToPs2Mapping.h"
 #include "ps2ToUsb.h"
+#include "ps2kbd-lib/ps2kbd.h"
+
 
 
 /*
@@ -45,22 +47,14 @@ void removeKey(hid_keyboard_report_t *input, unsigned char usbKey)
     //printf(" [key] released\n");
 }
 
-void handle_ps2_keyboard_event(unsigned char ps2Key){
-    static uint8_t release; // Flag indicates the release of a key
-    static uint8_t extNum; // PS2_EXTENSION_NUM
+void handle_ps2_keyboard_event(unsigned char ps2Key, unsigned char released, unsigned char shiftPressed, Ps2LockingKeysUnion *lockedKeys){
     unsigned char usbKeyPress = ps2UsbMapping[ps2Key];
     unsigned char modifierPressed = 0;
 
     //
-    if(!extNum)
+    if(1) //!extNum
     {
         switch (ps2Key) {
-            case PS2_RELASE_FLAG:               // key-release code 0xF0 detected
-                release = 1;         // set release
-                break;               // go back to start
-            case PS2_EXTENSION_FLAG:
-                extNum = 1;
-                break;
             case PS2_SHIFT_L:               // Left-side SHIFT key detected
                 modifierPressed = KEYBOARD_MODIFIER_LEFTSHIFT;  
                 break;
@@ -76,22 +70,17 @@ void handle_ps2_keyboard_event(unsigned char ps2Key){
             
             default:
                 // no case applies
-                if (!release){                              // If no key-release detected yet
+                if (!released){                              // If no key-release detected yet
                     addKey(&ps2KeyboardState.input,usbKeyPress);
                 }
                 else{
                     removeKey(&ps2KeyboardState.input,usbKeyPress);
                 }
-                release = 0;
-                extNum = 0;
                 break;
         }
     }
     else{
-        switch (ps2Key) {
-            case PS2_RELASE_FLAG:
-                release = 1;         
-                break;               
+        switch (ps2Key) {             
             case PS2_CONTROL_R:               
                 modifierPressed = KEYBOARD_MODIFIER_RIGHTCTRL;         
                 break;               
@@ -112,14 +101,11 @@ void handle_ps2_keyboard_event(unsigned char ps2Key){
 
     if(modifierPressed)
     {
-        if (release) {       
+        if (released) {       
             ps2KeyboardState.input.modifier ^= modifierPressed;
-            release = 0;     // Clear key-release flag
         } else {
             ps2KeyboardState.input.modifier |= modifierPressed; 
-        }   
-        release = 0;
-        extNum = 0;
+        }
     }
     ps2KeyboardState.changed = 1;
 }
