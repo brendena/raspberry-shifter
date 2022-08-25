@@ -46,7 +46,7 @@ int main(void)
 {
   board_init();
 
-  printf("TinyUSB Host CDC MSC HID Example\r\n");
+  printf("[Raspberry-Shifter]\r\n");
 
   tusb_init();
 
