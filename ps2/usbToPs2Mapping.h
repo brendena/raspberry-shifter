@@ -1,3 +1,4 @@
+#pragma once
 //*
 //this was all grabbed from a spread sheet
 const unsigned char ps2UsbMapping[] = {

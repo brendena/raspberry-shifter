@@ -12,7 +12,7 @@ pico_sdk_init()
 
 add_executable(RaspberryShifter)
 
-add_subdirectory(ps2/ps2kbd-lib)
+add_subdirectory(ps2/atkPico)
 
 # Example source
 target_sources(RaspberryShifter PUBLIC
@@ -30,7 +30,7 @@ target_include_directories(RaspberryShifter PUBLIC
 
 # In addition to pico_stdlib required for common PicoSDK functionality, add dependency on tinyusb_host
 # for TinyUSB device support and tinyusb_board for the additional board support library used by the example
-target_link_libraries(RaspberryShifter PUBLIC pico_stdlib tinyusb_host tinyusb_board hardware_pio ps2kbd-lib)
+target_link_libraries(RaspberryShifter PUBLIC pico_stdlib tinyusb_host tinyusb_board hardware_pio atk_pico_lib)
 
 pico_add_extra_outputs(RaspberryShifter)
 

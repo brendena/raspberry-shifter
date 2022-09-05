@@ -1,7 +1,7 @@
 #include "../usb/hid_keyboard.h"
 #include "usbToPs2Mapping.h"
 #include "ps2ToUsb.h"
-#include "ps2kbd-lib/ps2kbd.h"
+#include "atkPico/atkPico.h"
 
 
 
@@ -47,12 +47,11 @@ void removeKey(hid_keyboard_report_t *input, unsigned char usbKey)
     //printf(" [key] released\n");
 }
 
-void handle_ps2_keyboard_event(unsigned char ps2Key, unsigned char released, unsigned char shiftPressed, Ps2LockingKeysUnion *lockedKeys){
+void handle_ps2_keyboard_event(unsigned char ps2Key, unsigned char released, unsigned char ext, Ps2LockingKeysUnion *lockedKeys){
     unsigned char usbKeyPress = ps2UsbMapping[ps2Key];
     unsigned char modifierPressed = 0;
-
     //
-    if(1) //!extNum
+    if(!ext) 
     {
         switch (ps2Key) {
             case PS2_SHIFT_L:               // Left-side SHIFT key detected
@@ -81,16 +80,16 @@ void handle_ps2_keyboard_event(unsigned char ps2Key, unsigned char released, uns
     }
     else{
         switch (ps2Key) {             
-            case PS2_CONTROL_R:               
+            case PS2_EXT_CONTROL_R:               
                 modifierPressed = KEYBOARD_MODIFIER_RIGHTCTRL;         
                 break;               
-            case PS2_ALT_R:
+            case PS2_EXT_ALT_R:
                 modifierPressed = KEYBOARD_MODIFIER_RIGHTALT;  
                 break;
-            case PS2_GUI_L:               
+            case PS2_EXT_GUI_L:               
                 modifierPressed = KEYBOARD_MODIFIER_LEFTGUI;  
                 break;
-            case PS2_GUI_R:               
+            case PS2_EXT_GUI_R:               
                 modifierPressed = KEYBOARD_MODIFIER_RIGHTGUI;  
                 break;
         }
