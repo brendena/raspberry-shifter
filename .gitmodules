@@ -1,0 +1,3 @@
+[submodule "ps2/atkPico"]
+	path = ps2/atkPico
+	url = https://github.com/brendena/atkPico
